@@ -1,0 +1,11 @@
+{
+  "models": [
+    {
+      "id": "943a27d5",
+      "name": "Box",
+      "type": "threejs",
+      "scriptFile": "943a27d5.js",
+      "createdAt": "2026-06-05T12:28:45.712Z"
+    }
+  ]
+}
