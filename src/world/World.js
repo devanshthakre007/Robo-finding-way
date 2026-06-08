@@ -19,6 +19,7 @@ import {
   buildPath,
 } from "../world.js";
 import { LAYOUT } from "../story.js";
+import { loadHouse, placeHouse } from "./House.js";
 
 export default class World {
   constructor(experience) {
@@ -32,6 +33,17 @@ export default class World {
     this.setFlowers();
     this.setClouds();
     this.setFireflies();
+    this.setHouse();
+  }
+
+  async setHouse() {
+    try {
+      const gltf = await loadHouse();
+      this.house = placeHouse(gltf);
+      this.scene.add(this.house);
+    } catch (err) {
+      console.warn("Could not load house1.glb:", err);
+    }
   }
 
   place(obj, x, z, rotY = 0) {

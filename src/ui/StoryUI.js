@@ -63,4 +63,22 @@ export default class StoryUI {
   hideMoveHint() {
     if (this.moveHint) this.moveHint.classList.remove("show");
   }
+
+  showLoadingMsg(msg) {
+    if (this.loadingText) this.loadingText.textContent = msg;
+    if (this.loading) this.loading.classList.remove("hidden");
+  }
+
+  setSceneActive(n) {
+    const s1 = document.getElementById("scene1-btn");
+    const s2 = document.getElementById("scene2-btn");
+    if (s1) s1.classList.toggle("scene-btn--active", n === 1);
+    if (s2) s2.classList.toggle("scene-btn--active", n === 2);
+    const hint = document.getElementById("hint");
+    if (hint && n === "custom") {
+      hint.textContent = "Custom story · drag to look around after it ends";
+    } else if (hint) {
+      hint.textContent = "An automated story · drag to look around after it ends";
+    }
+  }
 }

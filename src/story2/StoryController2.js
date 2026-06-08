@@ -1,16 +1,15 @@
 /**
- * Story playback — ties timeline, director, speech bubbles, and actors together.
+ * Scene 2 story playback — city adventure.
  */
-import { AnimationMixer } from "three";
 import { SpeechBubbles } from "../speechBubbles.js";
 import { Timeline, Director } from "../storyPlayer.js";
-import { buildStory } from "../story.js";
+import { buildStory2, LAYOUT2 } from "./story2.js";
 
-export default class StoryController {
+export default class StoryController2 {
   constructor(experience) {
     this.experience = experience;
     this.camera = experience.camera;
-    this.actors = experience.actors;
+    this.actors2 = experience.actors2;
     this.ui = experience.storyUI;
 
     this.bubbles = new SpeechBubbles(document.getElementById("story-layer"));
@@ -22,16 +21,23 @@ export default class StoryController {
       bubbles: this.bubbles,
     });
 
-    this.initialState = this.actors.snapshot();
+    this.initialState = this.actors2.snapshot();
 
-    buildStory(this.director, {
-      hero: this.actors.hero,
-      wanderer: this.actors.wanderer,
-      child: this.actors.child,
-      friend: this.actors.friend,
-    }, this.ui);
+    buildStory2(
+      this.director,
+      {
+        hero:     this.actors2.hero,
+        bird:     this.actors2.bird,
+        bee:      this.actors2.bee,
+        elephant: this.actors2.elephant,
+      },
+      this.ui,
+    );
 
     this.timeline.onComplete = () => {
+      this.camera.controls.target.set(
+        LAYOUT2.elephant.x, 1.0, LAYOUT2.elephant.z,
+      );
       this.camera.controls.enabled = true;
       this.experience.playerController.enable();
       this.ui.showReplay();
@@ -40,18 +46,12 @@ export default class StoryController {
     this.start();
   }
 
-  setupMixer(robotGltf) {
-    if (robotGltf.animations.length === 0) return;
-    this.mixer = new AnimationMixer(this.actors.hero.children[0]);
-    robotGltf.animations.forEach((clip) => this.mixer.clipAction(clip).play());
-  }
-
   start() {
     this.bubbles.clear();
     this.ui.hideEnd();
     this.ui.hideReplay();
     this.experience.playerController.disable();
-    this.actors.restore(this.initialState);
+    this.actors2.restore(this.initialState);
     this.camera.controls.enabled = false;
     this.timeline.reset();
     this.timeline.play();
@@ -59,7 +59,9 @@ export default class StoryController {
 
   update(delta) {
     this.timeline.update(delta);
-    if (this.mixer) this.mixer.update(delta);
-    this.bubbles.update(this.camera.instance, this.experience.renderer.instance);
+    this.bubbles.update(
+      this.camera.instance,
+      this.experience.renderer.instance,
+    );
   }
 }

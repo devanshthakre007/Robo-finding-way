@@ -5,11 +5,15 @@ import {
   fetchModels,
   fetchBlenderStatus,
   fetchModelScript,
+  fetchAIAssets,
   createModel,
   deleteModel,
+  saveToAIAssets,
 } from "../utils/modelApi.js";
 import { runThreeJsScript } from "../utils/runThreeJsScript.js";
+import { exportGlb } from "../utils/exportGlb.js";
 import { BLENDER_TEMPLATE, THREEJS_TEMPLATE } from "./scriptTemplates.js";
+import ModelPreview from "./ModelPreview.js";
 
 export default class ModelStudio {
   constructor(modelLibrary) {
@@ -17,16 +21,21 @@ export default class ModelStudio {
     this.models = [];
     this.scriptType = "blender";
     this.busy = false;
+    this.previewModel = null;
 
     this.panel = document.getElementById("model-studio");
     this.toggle = document.getElementById("model-studio-toggle");
     this.scriptInput = document.getElementById("model-script");
     this.nameInput = document.getElementById("model-name");
+    this.categoryInput = document.getElementById("model-category");
     this.runBtn = document.getElementById("model-run");
+    this.previewBtn = document.getElementById("model-preview");
+    this.aiSaveBtn = document.getElementById("model-ai-save");
     this.statusEl = document.getElementById("model-status");
     this.listEl = document.getElementById("model-list");
     this.blenderStatusEl = document.getElementById("blender-status");
     this.typeButtons = this.panel.querySelectorAll("[data-script-type]");
+    this.preview = new ModelPreview();
 
     this.bindEvents();
     this.setScriptType("blender");
@@ -46,6 +55,8 @@ export default class ModelStudio {
     }
 
     this.runBtn.addEventListener("click", () => this.runScript());
+    this.previewBtn?.addEventListener("click", () => this.previewScript());
+    this.aiSaveBtn?.addEventListener("click", () => this.saveToAIAssets());
 
     this.scriptInput.addEventListener("keydown", (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
@@ -95,7 +106,64 @@ export default class ModelStudio {
   setBusy(busy) {
     this.busy = busy;
     this.runBtn.disabled = busy;
-    this.runBtn.textContent = busy ? "Building…" : "Enter ↵";
+    if (this.aiSaveBtn) this.aiSaveBtn.disabled = busy;
+    if (this.previewBtn) this.previewBtn.disabled = busy;
+    this.runBtn.textContent = busy ? "Building…" : "Save to library ↵";
+  }
+
+  buildThreeJsModel() {
+    const script = this.scriptInput.value.trim();
+    if (!script) throw new Error("Paste a script first.");
+    const model = runThreeJsScript(script);
+    this.previewModel = model;
+    return model;
+  }
+
+  previewScript() {
+    if (this.scriptType !== "threejs") {
+      this.setStatus("Preview is available for Three.js scripts only.", "error");
+      return;
+    }
+    try {
+      const model = this.buildThreeJsModel();
+      this.preview.show(model);
+      this.setStatus("Preview ready.", "success");
+    } catch (err) {
+      this.setStatus(err.message, "error");
+    }
+  }
+
+  async saveToAIAssets() {
+    if (this.busy) return;
+    if (this.scriptType !== "threejs") {
+      this.setStatus("Save to AI assets works with Three.js scripts only.", "error");
+      return;
+    }
+
+    const name = this.nameInput.value.trim();
+    const category = this.categoryInput?.value?.trim() || "custom";
+    if (!name) {
+      this.setStatus("Give the model a name first.", "error");
+      return;
+    }
+
+    this.setBusy(true);
+    this.setStatus("Exporting and saving to AI-Assets-generator…", "info");
+
+    try {
+      const model = this.previewModel ?? this.buildThreeJsModel();
+      const glb = await exportGlb(model);
+      const data = await saveToAIAssets({ name, category, glb });
+      await this.refresh();
+      this.setStatus(
+        `Saved as "${data.tag}.glb" — usable in story scripts and Scene 2.`,
+        "success",
+      );
+    } catch (err) {
+      this.setStatus(err.message || "Failed to save AI asset.", "error");
+    } finally {
+      this.setBusy(false);
+    }
   }
 
   async runScript() {
@@ -119,7 +187,7 @@ export default class ModelStudio {
 
     try {
       if (this.scriptType === "threejs") {
-        runThreeJsScript(script);
+        this.buildThreeJsModel();
       }
 
       const entry = await createModel({
@@ -128,8 +196,7 @@ export default class ModelStudio {
         script,
       });
 
-      this.models.unshift(entry);
-      this.renderList();
+      await this.refresh();
       this.setStatus(
         `"${entry.name}" saved to models/library/ — use "Add to scene" when ready.`,
         "success",
@@ -145,7 +212,22 @@ export default class ModelStudio {
   async refresh() {
     try {
       const data = await fetchModels();
-      this.models = data.models || [];
+      const localModels = data.models || [];
+      let aiModels = [];
+      try {
+        const manifest = await fetchAIAssets();
+        aiModels = (Array.isArray(manifest) ? manifest : []).map((a) => ({
+          id: `ai-${a.tag}`,
+          name: a.tag,
+          type: "ai-asset",
+          tag: a.tag,
+          category: a.category,
+          source: a.source,
+        }));
+      } catch {
+        aiModels = [];
+      }
+      this.models = [...localModels, ...aiModels];
       this.renderList();
     } catch {
       this.setStatus("Could not load saved models.", "error");
@@ -163,16 +245,19 @@ export default class ModelStudio {
     for (const model of this.models) {
       const card = document.createElement("article");
       card.className = "model-studio__card";
+      const meta = model.createdAt
+        ? new Date(model.createdAt).toLocaleString()
+        : model.category || "AI asset";
       card.innerHTML = `
         <div class="model-studio__card-head">
           <strong>${model.name}</strong>
           <span class="model-studio__badge">${model.type}</span>
         </div>
-        <p class="model-studio__card-meta">${new Date(model.createdAt).toLocaleString()}</p>
+        <p class="model-studio__card-meta">${meta}</p>
         <div class="model-studio__card-actions">
           <button type="button" class="model-studio__spawn" data-id="${model.id}">Add to scene</button>
-          <button type="button" class="model-studio__load" data-id="${model.id}">Load script</button>
-          <button type="button" class="model-studio__delete" data-id="${model.id}">Delete</button>
+          ${model.type !== "ai-asset" ? `<button type="button" class="model-studio__load" data-id="${model.id}">Load script</button>` : ""}
+          ${model.type !== "ai-asset" ? `<button type="button" class="model-studio__delete" data-id="${model.id}">Delete</button>` : ""}
         </div>
       `;
       this.listEl.appendChild(card);
@@ -183,7 +268,11 @@ export default class ModelStudio {
         const model = this.models.find((m) => m.id === btn.dataset.id);
         if (!model) return;
         try {
-          await this.modelLibrary.spawn(model);
+          if (model.type === "ai-asset") {
+            await this.modelLibrary.spawnAI(model.tag, model.name);
+          } else {
+            await this.modelLibrary.spawn(model);
+          }
           this.setStatus(`"${model.name}" added to the scene.`, "success");
         } catch (err) {
           this.setStatus(err.message, "error");
@@ -214,8 +303,7 @@ export default class ModelStudio {
         try {
           await deleteModel(model.id);
           this.modelLibrary.removeSpawned(model.id);
-          this.models = this.models.filter((m) => m.id !== model.id);
-          this.renderList();
+          await this.refresh();
           this.setStatus(`"${model.name}" deleted.`, "success");
         } catch (err) {
           this.setStatus(err.message, "error");

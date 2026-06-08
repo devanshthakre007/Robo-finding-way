@@ -9,6 +9,9 @@ import { randomUUID } from "node:crypto";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
+const AI_ASSETS_ROOT = path.join(ROOT, "..", "AI-Assets-generator");
+const AI_MODELS_DIR = path.join(AI_ASSETS_ROOT, "assets", "models");
+const AI_MANIFEST_PATH = path.join(AI_ASSETS_ROOT, "assets", "manifest.json");
 const MODELS_DIR = path.join(ROOT, "models", "library");
 const MANIFEST_PATH = path.join(MODELS_DIR, "manifest.json");
 const SCRIPTS_DIR = path.join(ROOT, "models", "scripts");
@@ -217,6 +220,120 @@ function sendFile(res, filePath, contentType) {
   res.statusCode = 200;
   res.setHeader("Content-Type", contentType);
   fs.createReadStream(filePath).pipe(res);
+}
+
+function sanitizeTag(name) {
+  return String(name || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 60);
+}
+
+function saveAIAssetModel(tag, category, buffer) {
+  fs.mkdirSync(AI_MODELS_DIR, { recursive: true });
+  const fileName = `${tag}.glb`;
+  fs.writeFileSync(path.join(AI_MODELS_DIR, fileName), buffer);
+
+  let manifest = [];
+  try {
+    manifest = JSON.parse(fs.readFileSync(AI_MANIFEST_PATH, "utf8"));
+  } catch {
+    manifest = [];
+  }
+
+  const existing = manifest.find((e) => e.tag === tag);
+  const entry = {
+    tag,
+    file: `assets/models/${fileName}`,
+    format: "glb",
+    category: category || "custom",
+    animations: [],
+    source: "User generated (script)",
+  };
+
+  if (existing) Object.assign(existing, entry);
+  else manifest.push(entry);
+
+  fs.writeFileSync(AI_MANIFEST_PATH, JSON.stringify(manifest, null, 2));
+  return entry;
+}
+
+export function createAIAssetsMiddleware() {
+  return async (req, res, next) => {
+    const route = pathname(req);
+
+    if (req.method === "GET" && route === "/ai-assets/sample-story.json") {
+      const samplePath = path.join(AI_ASSETS_ROOT, "assets", "sample-story.json");
+      if (!fs.existsSync(samplePath)) {
+        sendJson(res, 404, { error: "sample-story.json not found." });
+        return;
+      }
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.end(fs.readFileSync(samplePath, "utf8"));
+      return;
+    }
+
+    if (req.method === "POST" && route === "/ai-assets/save-model") {
+      try {
+        const url = new URL(req.url, "http://localhost");
+        const tag = sanitizeTag(url.searchParams.get("name"));
+        const category = sanitizeTag(url.searchParams.get("category")) || "custom";
+        if (!tag) {
+          sendJson(res, 400, { error: "Missing model name." });
+          return;
+        }
+
+        const buffer = await new Promise((resolve, reject) => {
+          const chunks = [];
+          req.on("data", (c) => chunks.push(c));
+          req.on("end", () => resolve(Buffer.concat(chunks)));
+          req.on("error", reject);
+        });
+        if (!buffer.length) {
+          sendJson(res, 400, { error: "Empty model body." });
+          return;
+        }
+
+        const entry = saveAIAssetModel(tag, category, buffer);
+        sendJson(res, 200, { ok: true, tag, entry });
+      } catch (err) {
+        sendJson(res, 500, { error: err.message });
+      }
+      return;
+    }
+
+    if (req.method === "GET" && route === "/ai-assets/manifest.json") {
+      if (!fs.existsSync(AI_MANIFEST_PATH)) {
+        sendJson(res, 404, { error: "AI-Assets-generator manifest not found." });
+        return;
+      }
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.end(fs.readFileSync(AI_MANIFEST_PATH, "utf8"));
+      return;
+    }
+
+    const modelMatch = route.match(/^\/ai-assets\/models\/([a-zA-Z0-9_-]+\.glb)$/);
+    if (req.method === "GET" && modelMatch) {
+      const filePath = path.join(AI_MODELS_DIR, modelMatch[1]);
+      if (!fs.existsSync(filePath)) {
+        sendJson(res, 404, { error: `Model not found: ${modelMatch[1]}` });
+        return;
+      }
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "model/gltf-binary");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      fs.createReadStream(filePath).pipe(res);
+      return;
+    }
+
+    next();
+  };
 }
 
 export function createModelApiMiddleware() {

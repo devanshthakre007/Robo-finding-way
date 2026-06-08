@@ -1,6 +1,14 @@
 {
   "models": [
     {
+      "id": "house1",
+      "name": "Game House",
+      "type": "blender",
+      "file": "house1.glb",
+      "scriptFile": "house1.py",
+      "createdAt": "2026-06-05T12:48:57.000Z"
+    },
+    {
       "id": "943a27d5",
       "name": "Box",
       "type": "threejs",

@@ -24,6 +24,20 @@ export default class ModelLibrary {
     this.spawnIndex = 0;
   }
 
+  async spawnAI(tag, name = tag, targetHeight = 1.5) {
+    const gltf = await this.loadGltf(`/ai-assets/models/${tag}.glb`);
+    const object3d = gltf.scene.clone();
+    const actor = makeActor(object3d, targetHeight);
+    const [x, z] = SPAWN_OFFSETS[this.spawnIndex % SPAWN_OFFSETS.length];
+    this.spawnIndex += 1;
+    actor.position.set(x, 0, z);
+    actor.userData.modelId = `ai-${tag}`;
+    actor.userData.modelName = name;
+    this.scene.add(actor);
+    this.spawned.push(actor);
+    return actor;
+  }
+
   async spawn(entry, targetHeight = 1.5) {
     let object3d;
 

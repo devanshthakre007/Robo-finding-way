@@ -28,6 +28,7 @@
       <h1 id="end-text"></h1>
     </div>
 
+    <div class="left-tools">
     <aside id="model-studio" class="model-studio">
       <button id="model-studio-toggle" type="button" class="model-studio__toggle">
         Model Studio
@@ -52,6 +53,15 @@
           autocomplete="off"
         />
 
+        <input
+          id="model-category"
+          class="model-studio__name"
+          type="text"
+          placeholder="Category (e.g. custom, animal)"
+          value="custom"
+          autocomplete="off"
+        />
+
         <textarea
           id="model-script"
           class="model-studio__editor"
@@ -59,7 +69,11 @@
           placeholder="Paste your model script here…"
         ></textarea>
 
-        <button id="model-run" type="button" class="model-studio__run">Enter ↵</button>
+        <div class="model-studio__actions">
+          <button id="model-preview" type="button" class="model-studio__run model-studio__run--secondary">Preview</button>
+          <button id="model-run" type="button" class="model-studio__run">Save to library ↵</button>
+          <button id="model-ai-save" type="button" class="model-studio__run model-studio__run--secondary">Save to AI assets</button>
+        </div>
         <p id="model-status" class="model-studio__status"></p>
 
         <section class="model-studio__library">
@@ -69,6 +83,33 @@
       </div>
     </aside>
 
+    <aside id="story-studio" class="story-studio">
+      <button id="story-studio-toggle" type="button" class="story-studio__toggle">
+        Story Script
+      </button>
+
+      <div class="story-studio__panel">
+        <header class="story-studio__header">
+          <h2>Story Script</h2>
+          <p class="story-studio__hint">Paste AI-Assets JSON (same format as sample-story.json)</p>
+        </header>
+
+        <textarea
+          id="story-script"
+          class="story-studio__editor"
+          spellcheck="false"
+          placeholder='{ "story": { "title": "...", "characters": [...], "scenes": [...] } }'
+        ></textarea>
+
+        <div class="story-studio__actions">
+          <button id="story-generate" type="button" class="story-studio__run">Generate Story</button>
+          <button id="story-sample" type="button" class="story-studio__run story-studio__run--ghost">Load sample</button>
+        </div>
+        <p id="story-status" class="story-studio__status"></p>
+      </div>
+    </aside>
+    </div>
+
     <nav id="weather-menu" class="weather-menu">
       <button id="weather-menu-toggle" type="button" class="weather-menu__toggle">
         Weather
@@ -76,8 +117,25 @@
       <div id="weather-options" class="weather-menu__options"></div>
     </nav>
 
+    <div id="model-preview-modal" class="model-preview-modal">
+      <div class="model-preview-modal__inner">
+        <button id="model-preview-close" type="button" class="model-preview-modal__close" title="Close">✕</button>
+        <canvas id="model-preview-canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Scene switcher -->
+    <nav id="scene-switcher" class="scene-switcher">
+      <button id="scene1-btn" type="button" class="scene-btn scene-btn--active">
+        🌿 Scene 1
+      </button>
+      <button id="scene2-btn" type="button" class="scene-btn">
+        🏙️ Scene 2
+      </button>
+    </nav>
+
     <button id="replay">↻ Replay</button>
-    <div id="hint">An automated 25s story · drag to look around after it ends</div>
+    <div id="hint">An automated story · drag to look around after it ends</div>
     <div id="move-hint">↑ ↓ ← → move the robot</div>
 
     <script type="module" src="/src/main.js"></script>

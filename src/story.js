@@ -16,7 +16,7 @@ export const LAYOUT = {
   wp3: { x: 0.7, z: -6.4 }, // beside the Mage
   wanderer: { x: 2.4, z: 1.9 },
   child: { x: -2.5, z: -3.3 },
-  friend: { x: 2.0, z: -8.0 },
+  friend: { x: 2.0, z: -8.4 },
 };
 
 const HERO = { name: "Robo", color: "#ff7043", headY: 2.05 };
