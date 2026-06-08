@@ -22,6 +22,8 @@ import Weather from "./world/Weather.js";
 import ModelLibrary from "./world/ModelLibrary.js";
 import ModelStudio from "./ui/ModelStudio.js";
 import StoryStudio from "./ui/StoryStudio.js";
+import ModelBrowser from "./ui/ModelBrowser.js";
+import ModelView from "./world/ModelView.js";
 import PlayerController from "./controls/PlayerController.js";
 import StoryController from "./story/StoryController.js";
 import StoryController2 from "./story2/StoryController2.js";
@@ -58,6 +60,7 @@ export default class Experience {
 
     document.getElementById("scene1-btn")?.addEventListener("click", () => this.switchScene(1));
     document.getElementById("scene2-btn")?.addEventListener("click", () => this.switchScene(2));
+    document.getElementById("scene3-btn")?.addEventListener("click", () => this.switchScene(3));
 
     document.getElementById("replay")?.addEventListener("click", () => this.replayCurrent());
   }
@@ -101,8 +104,40 @@ export default class Experience {
     this.modelStudio = this.modelStudio || new ModelStudio(this.modelLibrary);
     this.storyStudio = this.storyStudio || new StoryStudio(this);
 
+    this.modelBrowser?.setVisible(false);
+
     this.storyUI.hideLoading();
     this.storyUI.setSceneActive(1);
+    if (!this._ticking) { this._ticking = true; this.tick(); }
+  }
+
+  // ── Scene 3 — full-page model preview ────────────────────────────────────
+  async initScene3() {
+    this.clearScene();
+    this.currentScene = 3;
+
+    this.modelView = new ModelView(this);
+
+    this.camera = this.camera || new Camera(this);
+    this.camera.instance.position.set(3.2, 2.2, 4.5);
+    this.camera.controls.target.set(0, 1, 0);
+    this.camera.controls.enabled = true;
+    this.camera.controls.update();
+
+    this.renderer = this.renderer || new Renderer(this);
+    this.postProcessing = this.postProcessing || new PostProcessing(this);
+
+    this.modelLibrary = this.modelLibrary || new ModelLibrary(this);
+    this.modelStudio = this.modelStudio || new ModelStudio(this.modelLibrary);
+    this.storyStudio = this.storyStudio || new StoryStudio(this);
+    this.modelBrowser = this.modelBrowser || new ModelBrowser(this);
+
+    this.modelBrowser.setVisible(true);
+    await this.modelBrowser.refresh();
+    await this.modelBrowser.showSelected();
+
+    this.storyUI.hideLoading();
+    this.storyUI.setSceneActive(3);
     if (!this._ticking) { this._ticking = true; this.tick(); }
   }
 
@@ -139,6 +174,8 @@ export default class Experience {
     this.modelStudio = this.modelStudio || new ModelStudio(this.modelLibrary);
     this.storyStudio = this.storyStudio || new StoryStudio(this);
 
+    this.modelBrowser?.setVisible(false);
+
     this.storyUI.setSceneActive(2);
     if (!this._ticking) { this._ticking = true; this.tick(); }
   }
@@ -172,6 +209,8 @@ export default class Experience {
     this.storyUI.hideLoading();
     this.jsonStory.start();
 
+    this.modelBrowser?.setVisible(false);
+
     this.storyUI.setSceneActive("custom");
     if (!this._ticking) { this._ticking = true; this.tick(); }
   }
@@ -180,6 +219,7 @@ export default class Experience {
     if (n === this.currentScene) return;
     if (n === 1) this.initScene1();
     else if (n === 2) await this.initScene2();
+    else if (n === 3) await this.initScene3();
   }
 
   clearScene() {
@@ -202,6 +242,11 @@ export default class Experience {
     this.world2 = null;
     this.actors = null;
     this.actors2 = null;
+    if (this.modelView) {
+      this.modelView.clear();
+      this.modelView = null;
+    }
+    this.modelBrowser?.setVisible(false);
   }
 
   resize() {

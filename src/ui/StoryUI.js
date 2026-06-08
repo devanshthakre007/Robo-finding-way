@@ -72,13 +72,19 @@ export default class StoryUI {
   setSceneActive(n) {
     const s1 = document.getElementById("scene1-btn");
     const s2 = document.getElementById("scene2-btn");
+    const s3 = document.getElementById("scene3-btn");
     if (s1) s1.classList.toggle("scene-btn--active", n === 1);
     if (s2) s2.classList.toggle("scene-btn--active", n === 2);
+    if (s3) s3.classList.toggle("scene-btn--active", n === 3);
     const hint = document.getElementById("hint");
-    if (hint && n === "custom") {
+    if (hint && n === 3) {
+      hint.textContent = "Drag to orbit · scroll to zoom";
+    } else if (hint && n === "custom") {
       hint.textContent = "Custom story · drag to look around after it ends";
     } else if (hint) {
       hint.textContent = "An automated story · drag to look around after it ends";
     }
+    this.hideReplay();
+    this.hideMoveHint();
   }
 }

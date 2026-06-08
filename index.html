@@ -132,7 +132,19 @@
       <button id="scene2-btn" type="button" class="scene-btn">
         🏙️ Scene 2
       </button>
+      <button id="scene3-btn" type="button" class="scene-btn">
+        🧊 Models
+      </button>
     </nav>
+
+    <!-- Model picker — visible in Models scene only -->
+    <aside id="model-browser" class="model-browser">
+      <label class="model-browser__label" for="model-browser-select">Choose model</label>
+      <select id="model-browser-select" class="model-browser__select">
+        <option value="">Loading models…</option>
+      </select>
+      <p id="model-browser-status" class="model-browser__status"></p>
+    </aside>
 
     <button id="replay">↻ Replay</button>
     <div id="hint">An automated story · drag to look around after it ends</div>

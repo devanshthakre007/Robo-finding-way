@@ -171,6 +171,52 @@ body {
   box-shadow: 0 6px 20px rgba(60, 50, 90, 0.18);
 }
 
+/* Model browser — dropdown overlay for Models scene */
+.model-browser {
+  position: fixed;
+  top: 4.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 38;
+  display: none;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.6rem 0.75rem;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(60, 50, 90, 0.18);
+  min-width: 260px;
+}
+
+.model-browser--active {
+  display: flex;
+}
+
+.model-browser__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #6b6375;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.model-browser__select {
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid rgba(124, 77, 255, 0.2);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #4a3f5c;
+  background: #faf8ff;
+  cursor: pointer;
+}
+
+.model-browser__status {
+  min-height: 0.9rem;
+  font-size: 0.68rem;
+  color: #8a8098;
+}
+
 .scene-btn {
   padding: 0.45rem 1.1rem;
   border: none;
